@@ -8,6 +8,7 @@ import sys
 from datetime import datetime, timezone
 
 import discord
+from aiohttp import web
 from dotenv import load_dotenv
 from discord.ext import commands, tasks
 
@@ -28,7 +29,42 @@ POST_MARKER = "\u2063"
 
 logging.basicConfig(level=logging.INFO)
 intents = discord.Intents.default()
-bot = commands.Bot(command_prefix="!", intents=intents)
+
+
+class ForumWatcherBot(commands.Bot):
+    def __init__(self) -> None:
+        super().__init__(command_prefix="!", intents=intents)
+        self.health_runner: web.AppRunner | None = None
+
+    async def setup_hook(self) -> None:
+        # GitHub's one-shot run exits after updating and does not need an HTTP listener.
+        if RUN_ONCE:
+            return
+
+        app = web.Application()
+
+        async def health(_: web.Request) -> web.Response:
+            return web.Response(text="ok", content_type="text/plain")
+
+        app.router.add_get("/health", health)
+        self.health_runner = web.AppRunner(app, access_log=None)
+        await self.health_runner.setup()
+        site = web.TCPSite(
+            self.health_runner,
+            host="0.0.0.0",
+            port=int(os.getenv("PORT", "10000")),
+        )
+        await site.start()
+        logging.info("Health endpoint elindult a /health útvonalon.")
+
+    async def close(self) -> None:
+        if self.health_runner is not None:
+            await self.health_runner.cleanup()
+            self.health_runner = None
+        await super().close()
+
+
+bot = ForumWatcherBot()
 
 
 def activity_time(thread: discord.Thread) -> datetime:

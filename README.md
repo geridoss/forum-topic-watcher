@@ -2,6 +2,10 @@
 
 A bot a megadott fórumcsatornák öt legutóbb aktív, még nyitott topikját jeleníti meg egyetlen Discord-üzenetben. Helyi futtatáskor percenként frissít. GitHub Actions használatakor ötpercenként indul egy rövid futás, frissíti az üzenetet, majd leáll.
 
+## Renderes, folyamatos futtatás
+
+A Render ingyenes webszolgáltatásán történő beállításhoz és a külső ping monitorhoz kövesd a [Render telepítési útmutatót](RENDER-DEPLOY.md). A kód egy `/health` végpontot is kiszolgál.
+
 ## Helyi beállítás
 
 1. Másold a `.env.example` fájlt `.env` néven, és töltsd ki a tokennel és csatornaazonosítókkal.

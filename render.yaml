@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: forum-topic-watcher
+    runtime: python
+    plan: free
+    buildCommand: python -m pip install -r requirements.txt
+    startCommand: python main.py
+    healthCheckPath: /health
+    envVars:
+      - key: DISCORD_TOKEN
+        sync: false
+      - key: FORUM_CHANNEL_IDS
+        sync: false
+      - key: POST_CHANNEL_ID
+        sync: false
