@@ -1,10 +1,11 @@
-"""A Discord bot that keeps a live list of the five most recently active forum threads."""
+"""Keep a live list of recent activity in forum threads and text channels."""
 
 from __future__ import annotations
 
 import logging
 import os
 import sys
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
 import discord
@@ -20,8 +21,10 @@ def parse_ids(value: str) -> set[int]:
 
 
 TOKEN = os.environ["DISCORD_TOKEN"]
-FORUM_CHANNEL_IDS = parse_ids(os.environ["FORUM_CHANNEL_IDS"])
+FORUM_CHANNEL_IDS = parse_ids(os.getenv("FORUM_CHANNEL_IDS", ""))
+TEXT_CHANNEL_IDS = parse_ids(os.getenv("TEXT_CHANNEL_IDS", ""))
 POST_CHANNEL_ID = int(os.environ["POST_CHANNEL_ID"])
+TOPIC_LIMIT = int(os.getenv("TOPIC_LIMIT") or "5")
 RUN_ONCE = os.getenv("BOT_RUN_ONCE") == "1"
 exit_code = 0
 # Invisible separator keeps the bot's tracking marker out of the visible post.
@@ -74,29 +77,79 @@ def activity_time(thread: discord.Thread) -> datetime:
     return thread.created_at
 
 
+@dataclass(frozen=True)
+class Activity:
+    timestamp: datetime
+    name: str
+    channel_mention: str
+
+
 async def make_embed(guild: discord.Guild) -> discord.Embed:
     active_threads = await guild.active_threads()
-    threads = [
-        thread
+    activities = [
+        Activity(
+            timestamp=activity_time(thread),
+            name=thread.name,
+            channel_mention=f"<#{thread.id}>",
+        )
         for thread in active_threads
         if thread.parent_id in FORUM_CHANNEL_IDS and not thread.archived
     ]
-    threads.sort(key=activity_time, reverse=True)
+
+    for channel_id in TEXT_CHANNEL_IDS:
+        try:
+            channel = bot.get_channel(channel_id)
+            if channel is None:
+                channel = await bot.fetch_channel(channel_id)
+            if not isinstance(channel, discord.TextChannel) or channel.guild.id != guild.id:
+                logging.warning(
+                    "A TEXT_CHANNEL_IDS értéke nem a szerver szöveges csatornája: %s",
+                    channel_id,
+                )
+                continue
+
+            latest_message = None
+            async for message in channel.history(limit=10):
+                # Avoid treating this bot's own list post as user activity if the
+                # destination channel is also configured for monitoring.
+                if bot.user is not None and message.author.id == bot.user.id:
+                    continue
+                latest_message = message
+                break
+
+            if latest_message is not None:
+                activities.append(
+                    Activity(
+                        timestamp=latest_message.created_at,
+                        name=f"#{channel.name}",
+                        channel_mention=channel.mention,
+                    )
+                )
+        except discord.Forbidden:
+            logging.warning(
+                "Nincs hozzáférés a figyelt szöveges csatornához: %s", channel_id
+            )
+        except discord.HTTPException:
+            logging.exception(
+                "Nem sikerült lekérni a figyelt szöveges csatornát: %s", channel_id
+            )
+
+    activities.sort(key=lambda activity: activity.timestamp, reverse=True)
 
     embed = discord.Embed(
-        title="Legutóbb aktív fórumtopikok",
-        description="Az öt topik, amelyhez legutóbb hozzászóltak.",
+        title="Legutóbb aktív fórumtopikok és szöveges csatornák",
+        description=f"A legutóbbi {TOPIC_LIMIT} aktivitás a figyelt helyekről.",
         color=discord.Color.blurple(),
         timestamp=datetime.now(timezone.utc),
     )
-    if not threads:
-        embed.description = "Jelenleg nincs aktív topik a figyelt fórumcsatornákban."
+    if not activities:
+        embed.description = "Jelenleg nincs aktivitás a figyelt fórumtopikokban és szöveges csatornákban."
     else:
-        for index, thread in enumerate(threads[:5], start=1):
-            when = int(activity_time(thread).timestamp())
+        for index, activity in enumerate(activities[:TOPIC_LIMIT], start=1):
+            when = int(activity.timestamp.timestamp())
             embed.add_field(
-                name=f"{index}. {thread.name}",
-                value=f"<#{thread.id}> · <t:{when}:R>",
+                name=f"{index}. {activity.name}",
+                value=f"{activity.channel_mention} · <t:{when}:R>",
                 inline=False,
             )
     embed.set_footer(text="Automatikusan frissül")
@@ -150,8 +203,12 @@ async def on_ready() -> None:
         refresh_topics.start()
 
 
-if not FORUM_CHANNEL_IDS:
-    raise SystemExit("A FORUM_CHANNEL_IDS mezőben legalább egy fórumcsatorna-ID kell.")
+if TOPIC_LIMIT < 1:
+    raise SystemExit("A TOPIC_LIMIT értéke legalább 1 legyen.")
+if TOPIC_LIMIT > 25:
+    raise SystemExit("A TOPIC_LIMIT legfeljebb 25 lehet a Discord beágyazáskorlátja miatt.")
+if not FORUM_CHANNEL_IDS and not TEXT_CHANNEL_IDS:
+    raise SystemExit("Legalább egy fórum- vagy szöveges csatorna-ID-t meg kell adni.")
 
 bot.run(TOKEN)
 if exit_code:

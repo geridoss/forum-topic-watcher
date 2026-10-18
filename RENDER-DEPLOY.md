@@ -19,7 +19,9 @@ git push
 3. A Render a repó `render.yaml` fájljából létrehozza az ingyenes webszolgáltatást. Ha a Blueprint a titkos változókat kéri, add meg őket:
    - `DISCORD_TOKEN`: a Discord bot tokenje.
    - `FORUM_CHANNEL_IDS`: a figyelt fórumcsatornák ID-i, vesszővel elválasztva.
+   - `TEXT_CHANNEL_IDS`: a figyelt hagyományos szöveges csatornák ID-i, vesszővel elválasztva (opcionális).
    - `POST_CHANNEL_ID`: a lista csatornájának ID-je.
+   - `TOPIC_LIMIT`: a megjelenő aktivitások száma (opcionális, alapértelmezés: `5`).
 4. Indítsd el a telepítést, és várd meg, amíg a szolgáltatás állapota **Live** lesz.
 5. A szolgáltatás `onrender.com` címe után illeszd a `/health` útvonalat, például `https://forum-topic-watcher.onrender.com/health`. A böngészőben az `ok` választ kell látnod.
 

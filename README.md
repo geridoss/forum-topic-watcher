@@ -1,6 +1,6 @@
 # Discord fórumtopik-figyelő
 
-A bot a megadott fórumcsatornák öt legutóbb aktív, még nyitott topikját jeleníti meg egyetlen Discord-üzenetben. Helyi futtatáskor percenként frissít. GitHub Actions használatakor ötpercenként indul egy rövid futás, frissíti az üzenetet, majd leáll.
+A bot a megadott fórumcsatornák aktív topikjait, valamint a megadott szöveges csatornák legutóbbi üzeneteit egy közös, aktivitás szerint rendezett Discord-listában jeleníti meg. Alapértelmezésben az első öt elemet mutatja; a `TOPIC_LIMIT` változóval ez módosítható. Helyi vagy folyamatos felhős futtatáskor percenként frissít. GitHub Actions használatakor ötpercenként indul egy rövid futás, frissíti az üzenetet, majd leáll.
 
 ## Renderes, folyamatos futtatás
 
@@ -8,7 +8,7 @@ A Render ingyenes webszolgáltatásán történő beállításhoz és a külső 
 
 ## Helyi beállítás
 
-1. Másold a `.env.example` fájlt `.env` néven, és töltsd ki a tokennel és csatornaazonosítókkal.
+1. Másold a `.env.example` fájlt `.env` néven, és töltsd ki a tokennel és csatornaazonosítókkal. A fórumcsatornák ID-i a `FORUM_CHANNEL_IDS`, a normál szöveges csatornák ID-i a `TEXT_CHANNEL_IDS` változóba kerülnek; mindkettőnél vesszővel válaszd el az ID-kat. A `TOPIC_LIMIT` határozza meg, hány legfrissebb elem jelenjen meg.
 2. PowerShellben, ebben a mappában futtasd:
 
    ```powershell
@@ -48,7 +48,9 @@ A repóban menj a **Settings → Secrets and variables → Actions** oldalra, ma
 | --- | --- |
 | `DISCORD_TOKEN` | A bot tokenje |
 | `FORUM_CHANNEL_IDS` | A fórumcsatorna-ID-k, vesszővel elválasztva |
+| `TEXT_CHANNEL_IDS` | A figyelt hagyományos szöveges csatornák ID-i, vesszővel elválasztva (opcionális) |
 | `POST_CHANNEL_ID` | A lista célcsatornájának ID-je |
+| `TOPIC_LIMIT` | A listában megjelenő elemek száma (opcionális, alapértelmezés: `5`) |
 
 Ezeket a GitHub titkosítva tárolja, a workflow futásakor pedig környezeti változóként adja át a botnak.
 

@@ -19,7 +19,9 @@ jobs:
     env:
       DISCORD_TOKEN: ${{ secrets.DISCORD_TOKEN }}
       FORUM_CHANNEL_IDS: ${{ secrets.FORUM_CHANNEL_IDS }}
+      TEXT_CHANNEL_IDS: ${{ secrets.TEXT_CHANNEL_IDS }}
       POST_CHANNEL_ID: ${{ secrets.POST_CHANNEL_ID }}
+      TOPIC_LIMIT: ${{ secrets.TOPIC_LIMIT }}
       BOT_RUN_ONCE: "1"
     steps:
       - name: Get bot files

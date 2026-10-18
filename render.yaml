@@ -11,5 +11,9 @@ services:
         sync: false
       - key: FORUM_CHANNEL_IDS
         sync: false
+      - key: TEXT_CHANNEL_IDS
+        sync: false
       - key: POST_CHANNEL_ID
+        sync: false
+      - key: TOPIC_LIMIT
         sync: false
